@@ -8,11 +8,16 @@ import { Link } from 'wouter';
 
 export default function AdminPage() {
   const [words, setWords] = useState<WordData[]>([
-    { id: '1', word: 'CAT', clue: 'Feline pet', direction: 'across' },
-    { id: '2', word: 'DOG', clue: 'Canine companion', direction: 'across' },
-    { id: '3', word: 'DUCK', clue: 'Waterfowl with webbed feet', direction: 'across' },
-    { id: '4', word: 'CODE', clue: 'Programming language', direction: 'down' },
-    { id: '5', word: 'TREE', clue: 'Evergreen conifer', direction: 'down' },
+    { id: '1', word: 'QUALITY', clue: 'Standard of excellence', direction: 'across' },
+    { id: '2', word: 'TEAMWORK', clue: 'Collaborative effort', direction: 'across' },
+    { id: '3', word: 'EXCELLENCE', clue: 'Outstanding quality', direction: 'across' },
+    { id: '4', word: 'PROCESS', clue: 'Series of actions', direction: 'down' },
+    { id: '5', word: 'IMPROVEMENT', clue: 'Making something better', direction: 'down' },
+    { id: '6', word: 'SAFETY', clue: 'Protection from harm', direction: 'across' },
+    { id: '7', word: 'STANDARD', clue: 'Established norm', direction: 'down' },
+    { id: '8', word: 'FEEDBACK', clue: 'Constructive response', direction: 'across' },
+    { id: '9', word: 'AUDIT', clue: 'Official inspection', direction: 'down' },
+    { id: '10', word: 'CUSTOMER', clue: 'Person who buys', direction: 'across' },
   ]);
   const [editingWord, setEditingWord] = useState<WordData | null>(null);
 

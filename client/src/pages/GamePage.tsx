@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { RotateCcw, Play, Settings } from 'lucide-react';
-import CrosswordGrid, { Cell } from '@/components/CrosswordGrid';
+import WordSearchGrid, { PlacedWord } from '@/components/WordSearchGrid';
 import Timer from '@/components/Timer';
 import Leaderboard, { LeaderboardEntry } from '@/components/Leaderboard';
-import CluePanel, { Clue } from '@/components/CluePanel';
+import WordList from '@/components/WordList';
 import CompletionModal from '@/components/CompletionModal';
+import { generateWordSearchGrid } from '@/utils/wordSearchGenerator';
+import { Link } from 'wouter';
 
 export default function GamePage() {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -13,58 +15,21 @@ export default function GamePage() {
   const [completionTime, setCompletionTime] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [foundWords, setFoundWords] = useState<Set<string>>(new Set());
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([
     { id: '1', name: 'Alice', time: 125, rank: 1 },
     { id: '2', name: 'Bob', time: 148, rank: 2 },
     { id: '3', name: 'Carol', time: 162, rank: 3 },
   ]);
 
-  const grid: Cell[][] = [
-    [
-      { letter: 'C', number: 1, isBlack: false },
-      { letter: 'A', isBlack: false },
-      { letter: 'T', isBlack: false },
-      { letter: '', isBlack: true },
-      { letter: 'D', number: 2, isBlack: false },
-      { letter: 'O', isBlack: false },
-      { letter: 'G', isBlack: false },
-    ],
-    [
-      { letter: 'O', isBlack: false },
-      { letter: '', isBlack: true },
-      { letter: 'R', isBlack: false },
-      { letter: '', isBlack: true },
-      { letter: 'A', isBlack: false },
-      { letter: '', isBlack: true },
-      { letter: 'O', isBlack: false },
-    ],
-    [
-      { letter: 'D', number: 3, isBlack: false },
-      { letter: 'U', isBlack: false },
-      { letter: 'C', isBlack: false },
-      { letter: 'K', isBlack: false },
-      { letter: '', isBlack: true },
-      { letter: '', isBlack: true },
-      { letter: 'A', isBlack: false },
-    ],
-    [
-      { letter: 'E', isBlack: false },
-      { letter: '', isBlack: true },
-      { letter: 'E', isBlack: false },
-      { letter: '', isBlack: true },
-      { letter: '', isBlack: true },
-      { letter: '', isBlack: true },
-      { letter: 'T', isBlack: false },
-    ],
+  const words = [
+    'QUALITY', 'TEAMWORK', 'EXCELLENCE', 'PROCESS', 'IMPROVEMENT',
+    'SAFETY', 'STANDARD', 'FEEDBACK', 'AUDIT', 'CUSTOMER'
   ];
 
-  const clues: Clue[] = [
-    { number: 1, text: 'Feline pet', direction: 'across' },
-    { number: 2, text: 'Canine companion', direction: 'across' },
-    { number: 3, text: 'Waterfowl with webbed feet', direction: 'across' },
-    { number: 1, text: 'Programming language', direction: 'down' },
-    { number: 2, text: 'Evergreen conifer', direction: 'down' },
-  ];
+  const [gridData, setGridData] = useState<{ grid: string[][]; placedWords: PlacedWord[] }>(
+    () => generateWordSearchGrid(words, 14)
+  );
 
   useEffect(() => {
     if (!isPlaying || isCompleted) return;
@@ -76,17 +41,26 @@ export default function GamePage() {
     return () => clearInterval(interval);
   }, [isPlaying, isCompleted]);
 
+  useEffect(() => {
+    if (foundWords.size === words.length && foundWords.size > 0) {
+      handleComplete();
+    }
+  }, [foundWords]);
+
   const handleStart = () => {
     setIsPlaying(true);
     setIsCompleted(false);
     setElapsedTime(0);
+    setFoundWords(new Set());
+    setGridData(generateWordSearchGrid(words, 14));
   };
 
   const handleReset = () => {
     setIsPlaying(false);
     setIsCompleted(false);
     setElapsedTime(0);
-    window.location.reload();
+    setFoundWords(new Set());
+    setGridData(generateWordSearchGrid(words, 14));
   };
 
   const handleComplete = () => {
@@ -94,6 +68,10 @@ export default function GamePage() {
     setIsPlaying(false);
     setCompletionTime(elapsedTime);
     setShowCompletionModal(true);
+  };
+
+  const handleWordFound = (word: string) => {
+    setFoundWords((prev) => new Set(Array.from(prev).concat(word)));
   };
 
   const handleSubmitScore = (name: string) => {
@@ -110,25 +88,32 @@ export default function GamePage() {
     setShowCompletionModal(false);
   };
 
+  const handleTimeUp = () => {
+    setIsCompleted(true);
+    setIsPlaying(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card">
+      <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h1 className="text-3xl font-bold">Crossword Puzzle</h1>
+            <h1 className="text-3xl font-bold">Word Search Puzzle</h1>
             <div className="flex items-center gap-4">
               <Timer
-                duration={300}
+                duration={180}
                 isPaused={!isPlaying || isCompleted}
-                onTick={(remaining) => {}}
+                onTimeUp={handleTimeUp}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                data-testid="button-settings"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
+              <Link href="/admin">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  data-testid="button-admin"
+                >
+                  <Settings className="w-5 h-5" />
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
@@ -139,6 +124,9 @@ export default function GamePage() {
           <div className="flex-1 space-y-8">
             {!isPlaying && !isCompleted && (
               <div className="text-center space-y-4">
+                <p className="text-lg text-muted-foreground">
+                  Find all {words.length} words hidden in the grid!
+                </p>
                 <Button
                   size="lg"
                   onClick={handleStart}
@@ -154,9 +142,10 @@ export default function GamePage() {
             {(isPlaying || isCompleted) && (
               <>
                 <div className="flex justify-center">
-                  <CrosswordGrid
-                    grid={grid}
-                    onComplete={handleComplete}
+                  <WordSearchGrid
+                    grid={gridData.grid}
+                    placedWords={gridData.placedWords}
+                    onWordFound={handleWordFound}
                     disabled={isCompleted}
                   />
                 </div>
@@ -168,11 +157,11 @@ export default function GamePage() {
                     data-testid="button-reset"
                   >
                     <RotateCcw className="w-4 h-4 mr-2" />
-                    Reset Puzzle
+                    New Puzzle
                   </Button>
                 </div>
 
-                <CluePanel clues={clues} />
+                <WordList words={words} foundWords={foundWords} />
               </>
             )}
           </div>

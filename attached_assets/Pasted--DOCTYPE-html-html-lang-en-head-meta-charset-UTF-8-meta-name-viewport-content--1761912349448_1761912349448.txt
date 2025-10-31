@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quality Week Word Search Game</title>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f8fafc;
+      text-align: center;
+      color: #111827;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { color: #2563eb; margin-bottom: 0; }
+    #timer { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
+    #grid {
+      display: inline-grid;
+      grid-template-columns: repeat(14, 30px);
+      grid-gap: 4px;
+      margin-top: 20px;
+      user-select: none;
+    }
+    .cell {
+      width: 30px;
+      height: 30px;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cell.selected { background: #bfdbfe; }
+    .cell.found { background: #22c55e; color: white; }
+    #word-list { margin-top: 25px; font-size: 1.1em; }
+    .found-word { text-decoration: line-through; color: #16a34a; }
+    #message { margin-top: 20px; font-size: 1.2em; color: #2563eb; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>🧩 Quality Week Word Search</h1>
+  <div id="timer">⏳ Time left: 3:00</div>
+  <div id="grid"></div>
+  <div id="word-list"></div>
+  <div id="message"></div>
+ 
+  <script>
+    const words = [
+      "QUALITY", "TEAMWORK", "EXCELLENCE", "PROCESS", "IMPROVEMENT",
+      "SAFETY", "STANDARD", "FEEDBACK", "AUDIT", "CUSTOMER",
+      "INNOVATION", "COMPLIANCE"
+    ];
+ 
+    const gridSize = 14;
+    const grid = Array.from({ length: gridSize }, () => Array(gridSize).fill(''));
+ 
+    // ✅ Only allow left→right or top→bottom
+    const directions = [
+      [0, 1],  // horizontal
+      [1, 0]   // vertical
+    ];
+ 
+    function canPlace(word, row, col, dir) {
+      for (let i = 0; i < word.length; i++) {
+        const r = row + dir[0] * i;
+        const c = col + dir[1] * i;
+        if (r < 0 || c < 0 || r >= gridSize || c >= gridSize) return false;
+        if (grid[r][c] && grid[r][c] !== word[i]) return false;
+      }
+      return true;
+    }
+ 
+    function placeWord(word) {
+      let attempts = 0;
+      while (attempts < 500) {
+        const row = Math.floor(Math.random() * gridSize);
+        const col = Math.floor(Math.random() * gridSize);
+        const dir = directions[Math.floor(Math.random() * directions.length)];
+        if (canPlace(word, row, col, dir)) {
+          for (let i = 0; i < word.length; i++) {
+            grid[row + dir[0] * i][col + dir[1] * i] = word[i];
+          }
+          return true;
+        }
+        attempts++;
+      }
+      return false;
+    }
+ 
+    // Place words cleanly
+    for (const word of words) {
+      if (!placeWord(word)) console.warn("Failed to place:", word);
+    }
+ 
+    // Fill remaining with random letters
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        if (!grid[r][c]) grid[r][c] = letters[Math.floor(Math.random() * letters.length)];
+      }
+    }
+ 
+    // Build grid
+    const gridDiv = document.getElementById('grid');
+    const wordListDiv = document.getElementById('word-list');
+    const messageDiv = document.getElementById('message');
+    const foundWords = new Set();
+    let selectedCells = [];
+ 
+    for (let r = 0; r < gridSize; r++) {
+      for (let c = 0; c < gridSize; c++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.textContent = grid[r][c];
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+        gridDiv.appendChild(cell);
+      }
+    }
+ 
+    // Word list display
+    wordListDiv.innerHTML =
+      "<b>Find these words:</b><br>" +
+      words.map(w => `<span id="${w}">${w}</span>`).join(" • ");
+ 
+    // ✅ Selection logic fixed
+    gridDiv.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('cell')) return;
+      const cell = e.target;
+      const row = +cell.dataset.row;
+      const col = +cell.dataset.col;
+ 
+      cell.classList.toggle('selected');
+      selectedCells.push([row, col]);
+ 
+      const selectedWord = getSelectedWord();
+      const reversed = selectedWord.split('').reverse().join('');
+ 
+      if (words.includes(selectedWord)) markWordFound(selectedWord);
+      else if (words.includes(reversed)) markWordFound(reversed);
+ 
+      // Reset selection after checking
+      if (selectedCells.length > 15) clearSelection();
+    });
+ 
+    function getSelectedWord() {
+      return selectedCells.map(([r, c]) => grid[r][c]).join('');
+    }
+ 
+    function markWordFound(word) {
+      if (foundWords.has(word)) return;
+      foundWords.add(word);
+      document.getElementById(word).classList.add('found-word');
+      document.querySelectorAll('.cell.selected').forEach(c => {
+        c.classList.add('found');
+        c.classList.remove('selected');
+      });
+      selectedCells = [];
+      if (foundWords.size === words.length) {
+        messageDiv.textContent = "🎉 Congratulations! You found all the words!";
+        clearInterval(timer);
+      }
+    }
+ 
+    function clearSelection() {
+      document.querySelectorAll('.cell.selected').forEach(c => c.classList.remove('selected'));
+      selectedCells = [];
+    }
+ 
+    // Timer
+    let timeLeft = 180;
+    const timerDiv = document.getElementById('timer');
+    const timer = setInterval(() => {
+      timeLeft--;
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      timerDiv.textContent = `⏳ Time left: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        messageDiv.textContent = "⏰ Time's up!";
+        gridDiv.style.pointerEvents = "none";
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
