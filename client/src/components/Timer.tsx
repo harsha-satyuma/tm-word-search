@@ -21,16 +21,21 @@ export default function Timer({ duration, onTimeUp, isPaused = false, onTick }: 
     const interval = setInterval(() => {
       setTimeRemaining((prev) => {
         const newTime = Math.max(0, prev - 1);
-        if (onTick) onTick(newTime);
         if (newTime === 0 && onTimeUp) {
-          onTimeUp();
+          setTimeout(() => onTimeUp(), 0);
         }
         return newTime;
       });
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPaused, timeRemaining, onTimeUp, onTick]);
+  }, [isPaused, timeRemaining, onTimeUp]);
+
+  useEffect(() => {
+    if (onTick && !isPaused) {
+      onTick(timeRemaining);
+    }
+  }, [timeRemaining]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
