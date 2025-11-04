@@ -6,6 +6,47 @@ import express from "express";
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use(express.json());
 
+  // Game settings routes
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getAllGameSettings();
+      const settingsObj = settings.reduce(
+        (acc, setting) => {
+          acc[setting.settingKey] = setting.settingValue;
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      // Set default timer duration if not exists
+      if (!settingsObj.timerDuration) {
+        await storage.upsertGameSetting("timerDuration", "10");
+        settingsObj.timerDuration = "10";
+      }
+
+      res.json({ settings: settingsObj });
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ error: "Failed to fetch settings" });
+    }
+  });
+
+  app.post("/api/settings", async (req, res) => {
+    try {
+      const { key, value } = req.body;
+
+      if (!key || !value) {
+        return res.status(400).json({ error: "Key and value are required" });
+      }
+
+      const setting = await storage.upsertGameSetting(key, value);
+      res.json({ setting });
+    } catch (error) {
+      console.error("Error updating setting:", error);
+      res.status(500).json({ error: "Failed to update setting" });
+    }
+  });
+
   // Player routes
   app.post("/api/players/register", async (req, res) => {
     try {

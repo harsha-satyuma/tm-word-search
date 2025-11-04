@@ -5,6 +5,7 @@ import {
   admins,
   players,
   gameResults,
+  gameSettings,
   type Admin,
   type Player,
   type GameResult,
@@ -12,6 +13,8 @@ import {
   type InsertPlayer,
   type InsertGameResult,
   type LeaderboardEntry,
+  type GameSetting,
+  type InsertGameSetting,
 } from "@shared/schema";
 import * as crypto from "crypto";
 
@@ -33,6 +36,11 @@ export interface IStorage {
   createGameResult(result: InsertGameResult): Promise<GameResult>;
   getLeaderboard(): Promise<LeaderboardEntry[]>;
   getPlayerGameResult(playerId: number): Promise<GameResult | undefined>;
+
+  // Game settings methods
+  getGameSetting(key: string): Promise<GameSetting | undefined>;
+  upsertGameSetting(key: string, value: string): Promise<GameSetting>;
+  getAllGameSettings(): Promise<GameSetting[]>;
 }
 
 export class SqliteStorage implements IStorage {
@@ -134,8 +142,11 @@ export class SqliteStorage implements IStorage {
       })
       .from(gameResults)
       .innerJoin(players, eq(gameResults.playerId, players.id))
-      .where(eq(gameResults.completed, true))
-      .orderBy(desc(gameResults.wordsFound), gameResults.timeTaken)
+      .orderBy(
+        desc(gameResults.completed),
+        desc(gameResults.wordsFound),
+        gameResults.timeTaken,
+      )
       .all();
 
     return results.map((result, index) => ({
@@ -158,6 +169,47 @@ export class SqliteStorage implements IStorage {
       .where(eq(gameResults.playerId, playerId))
       .limit(1);
     return result[0];
+  }
+
+  // Game settings methods
+  async getGameSetting(key: string): Promise<GameSetting | undefined> {
+    const result = await db
+      .select()
+      .from(gameSettings)
+      .where(eq(gameSettings.settingKey, key))
+      .limit(1);
+    return result[0];
+  }
+
+  async upsertGameSetting(key: string, value: string): Promise<GameSetting> {
+    // Try to update first
+    const existing = await this.getGameSetting(key);
+
+    if (existing) {
+      const updated = await db
+        .update(gameSettings)
+        .set({
+          settingValue: value,
+          updatedAt: new Date(),
+        })
+        .where(eq(gameSettings.settingKey, key))
+        .returning();
+      return updated[0];
+    } else {
+      // Insert new setting
+      const inserted = await db
+        .insert(gameSettings)
+        .values({
+          settingKey: key,
+          settingValue: value,
+        })
+        .returning();
+      return inserted[0];
+    }
+  }
+
+  async getAllGameSettings(): Promise<GameSetting[]> {
+    return await db.select().from(gameSettings).all();
   }
 
   // Utility method for password hashing

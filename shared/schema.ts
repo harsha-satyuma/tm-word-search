@@ -86,3 +86,24 @@ export type LeaderboardEntry = {
   completedAt: Date;
   rank: number;
 };
+
+// Game settings table
+export const gameSettings = sqliteTable("game_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  settingKey: text("setting_key").notNull().unique(),
+  settingValue: text("setting_value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const insertGameSettingSchema = createInsertSchema(gameSettings, {
+  settingKey: z.string().min(1),
+  settingValue: z.string().min(1),
+}).pick({
+  settingKey: true,
+  settingValue: true,
+});
+
+export type InsertGameSetting = z.infer<typeof insertGameSettingSchema>;
+export type GameSetting = typeof gameSettings.$inferSelect;

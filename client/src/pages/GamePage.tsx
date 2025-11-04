@@ -4,7 +4,6 @@ import { RotateCcw, Play, Settings } from "lucide-react";
 import WordSearchGrid, { PlacedWord } from "@/components/WordSearchGrid";
 import Timer from "@/components/Timer";
 import WordList from "@/components/WordList";
-import CompletionModal from "@/components/CompletionModal";
 import PlayerRegistrationModal, {
   PlayerInfo,
 } from "@/components/PlayerRegistrationModal";
@@ -19,9 +18,9 @@ export default function GamePage() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [completionTime, setCompletionTime] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [foundWords, setFoundWords] = useState<Set<string>>(new Set());
   const [gameSubmitted, setGameSubmitted] = useState(false);
+  const [timerDuration, setTimerDuration] = useState(10); // Default 10 seconds for testing
   const { toast } = useToast();
 
   const words = [
@@ -41,6 +40,23 @@ export default function GamePage() {
     grid: string[][];
     placedWords: PlacedWord[];
   }>(() => generateWordSearchGrid(words, 14));
+
+  // Fetch timer duration from settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch("/api/settings");
+        const data = await response.json();
+        if (response.ok && data.settings?.timerDuration) {
+          setTimerDuration(parseInt(data.settings.timerDuration, 10));
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+        // Keep default of 10 seconds
+      }
+    };
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     if (foundWords.size === words.length && foundWords.size > 0 && isPlaying) {
@@ -109,7 +125,6 @@ export default function GamePage() {
         }
 
         setGameSubmitted(true);
-        setShowCompletionModal(true);
       } catch (error) {
         console.error("Error submitting game result:", error);
         toast({
@@ -133,9 +148,9 @@ export default function GamePage() {
 
   const getCompletionMessage = () => {
     if (foundWords.size === words.length) {
-      return "Congratulations! You found all the words!";
+      return "You found all the words!";
     } else {
-      return `Time's up! You found ${foundWords.size} out of ${words.length} words.`;
+      return `You found ${foundWords.size} out of ${words.length} words.`;
     }
   };
 
@@ -161,10 +176,12 @@ export default function GamePage() {
               {isPlaying && !isCompleted && (
                 <Timer
                   key={isPlaying ? "playing" : "stopped"}
-                  duration={180}
+                  duration={timerDuration}
                   isPaused={!isPlaying || isCompleted}
                   onTimeUp={handleTimeUp}
-                  onTick={(remaining) => setElapsedTime(180 - remaining)}
+                  onTick={(remaining) =>
+                    setElapsedTime(timerDuration - remaining)
+                  }
                 />
               )}
               <Link href="/admin/login">
@@ -186,7 +203,9 @@ export default function GamePage() {
                   Find all {words.length} words hidden in the grid!
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  You have 3 minutes to complete the puzzle.
+                  You have {Math.floor(timerDuration / 60)}:
+                  {(timerDuration % 60).toString().padStart(2, "0")} to complete
+                  the puzzle.
                 </p>
                 <Button
                   size="lg"
@@ -273,13 +292,6 @@ export default function GamePage() {
           </div>
         </div>
       </div>
-
-      <CompletionModal
-        isOpen={showCompletionModal}
-        onClose={() => setShowCompletionModal(false)}
-        completionTime={completionTime}
-        onSubmit={() => setShowCompletionModal(false)}
-      />
     </div>
   );
 }
