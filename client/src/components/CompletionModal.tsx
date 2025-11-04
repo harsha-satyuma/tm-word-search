@@ -1,19 +1,26 @@
-import { useState, useEffect } from 'react';
-import { Trophy, Sparkles } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useEffect, useState } from "react";
+import { Trophy, Sparkles } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 export interface CompletionModalProps {
   isOpen: boolean;
   onClose: () => void;
   completionTime: number;
-  onSubmit: (name: string) => void;
+  onSubmit: () => void;
 }
 
-export default function CompletionModal({ isOpen, onClose, completionTime, onSubmit }: CompletionModalProps) {
-  const [name, setName] = useState('');
+export default function CompletionModal({
+  isOpen,
+  onClose,
+  completionTime,
+  onSubmit,
+}: CompletionModalProps) {
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -26,15 +33,12 @@ export default function CompletionModal({ isOpen, onClose, completionTime, onSub
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      onSubmit(name.trim());
-      setName('');
-    }
+  const handleSubmit = () => {
+    onSubmit();
+    onClose();
   };
 
   return (
@@ -47,8 +51,14 @@ export default function CompletionModal({ isOpen, onClose, completionTime, onSub
               className="absolute w-2 h-2 animate-confetti"
               style={{
                 left: `${Math.random() * 100}%`,
-                top: '-10px',
-                backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                top: "-10px",
+                backgroundColor: [
+                  "#3b82f6",
+                  "#ef4444",
+                  "#10b981",
+                  "#f59e0b",
+                  "#8b5cf6",
+                ][Math.floor(Math.random() * 5)],
                 animationDelay: `${Math.random() * 0.5}s`,
                 animationDuration: `${2 + Math.random()}s`,
               }}
@@ -66,42 +76,26 @@ export default function CompletionModal({ isOpen, onClose, completionTime, onSub
             </DialogTitle>
           </DialogHeader>
           <div className="text-center space-y-6 py-4">
-            <p className="text-lg text-muted-foreground">You completed the puzzle in</p>
-            <div className="text-5xl font-bold text-primary tabular-nums" data-testid="text-completion-time">
+            <p className="text-lg text-muted-foreground">
+              You completed the puzzle in
+            </p>
+            <div
+              className="text-5xl font-bold text-primary tabular-nums"
+              data-testid="text-completion-time"
+            >
               {formatTime(completionTime)}
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="player-name">Enter your name for the leaderboard</Label>
-                <Input
-                  id="player-name"
-                  type="text"
-                  placeholder="Your name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  data-testid="input-player-name"
-                  autoFocus
-                />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  type="submit"
-                  className="flex-1"
-                  disabled={!name.trim()}
-                  data-testid="button-submit-score"
-                >
-                  Submit to Leaderboard
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={onClose}
-                  data-testid="button-close-modal"
-                >
-                  Close
-                </Button>
-              </div>
-            </form>
+            <p className="text-sm text-muted-foreground">
+              Your result has been saved to the leaderboard!
+            </p>
+            <Button
+              type="button"
+              className="w-full"
+              onClick={handleSubmit}
+              data-testid="button-close-modal"
+            >
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

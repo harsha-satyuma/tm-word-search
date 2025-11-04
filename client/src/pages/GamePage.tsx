@@ -1,58 +1,73 @@
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { RotateCcw, Play, Settings } from 'lucide-react';
-import WordSearchGrid, { PlacedWord } from '@/components/WordSearchGrid';
-import Timer from '@/components/Timer';
-import Leaderboard, { LeaderboardEntry } from '@/components/Leaderboard';
-import WordList from '@/components/WordList';
-import CompletionModal from '@/components/CompletionModal';
-import { generateWordSearchGrid } from '@/utils/wordSearchGenerator';
-import { Link } from 'wouter';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { RotateCcw, Play, Settings } from "lucide-react";
+import WordSearchGrid, { PlacedWord } from "@/components/WordSearchGrid";
+import Timer from "@/components/Timer";
+import WordList from "@/components/WordList";
+import CompletionModal from "@/components/CompletionModal";
+import PlayerRegistrationModal, {
+  PlayerInfo,
+} from "@/components/PlayerRegistrationModal";
+import { generateWordSearchGrid } from "@/utils/wordSearchGenerator";
+import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function GamePage() {
+  const [playerInfo, setPlayerInfo] = useState<PlayerInfo | null>(null);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [completionTime, setCompletionTime] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [foundWords, setFoundWords] = useState<Set<string>>(new Set());
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([
-    { id: '1', name: 'Alice', time: 125, rank: 1 },
-    { id: '2', name: 'Bob', time: 148, rank: 2 },
-    { id: '3', name: 'Carol', time: 162, rank: 3 },
-  ]);
+  const [gameSubmitted, setGameSubmitted] = useState(false);
+  const { toast } = useToast();
 
   const words = [
-    'QUALITY', 'TEAMWORK', 'EXCELLENCE', 'PROCESS', 'IMPROVEMENT',
-    'SAFETY', 'STANDARD', 'FEEDBACK', 'AUDIT', 'CUSTOMER'
+    "QUALITY",
+    "TEAMWORK",
+    "EXCELLENCE",
+    "PROCESS",
+    "IMPROVEMENT",
+    "SAFETY",
+    "STANDARD",
+    "FEEDBACK",
+    "AUDIT",
+    "CUSTOMER",
   ];
 
-  const [gridData, setGridData] = useState<{ grid: string[][]; placedWords: PlacedWord[] }>(
-    () => generateWordSearchGrid(words, 14)
-  );
+  const [gridData, setGridData] = useState<{
+    grid: string[][];
+    placedWords: PlacedWord[];
+  }>(() => generateWordSearchGrid(words, 14));
 
   useEffect(() => {
-    if (!isPlaying || isCompleted) return;
-
-    const interval = setInterval(() => {
-      setElapsedTime((prev) => prev + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isPlaying, isCompleted]);
-
-  useEffect(() => {
-    if (foundWords.size === words.length && foundWords.size > 0) {
-      handleComplete();
+    if (foundWords.size === words.length && foundWords.size > 0 && isPlaying) {
+      handleComplete(true);
     }
-  }, [foundWords]);
+  }, [foundWords, isPlaying]);
+
+  const handlePlayerRegister = (player: PlayerInfo) => {
+    setPlayerInfo(player);
+    setShowRegistrationModal(false);
+  };
 
   const handleStart = () => {
+    if (!playerInfo) {
+      toast({
+        title: "Error",
+        description: "Please register first",
+        variant: "destructive",
+      });
+      return;
+    }
     setIsPlaying(true);
     setIsCompleted(false);
     setElapsedTime(0);
     setFoundWords(new Set());
     setGridData(generateWordSearchGrid(words, 14));
+    setGameSubmitted(false);
   };
 
   const handleReset = () => {
@@ -61,56 +76,99 @@ export default function GamePage() {
     setElapsedTime(0);
     setFoundWords(new Set());
     setGridData(generateWordSearchGrid(words, 14));
+    setGameSubmitted(false);
   };
 
-  const handleComplete = () => {
+  const handleComplete = async (allWordsFound: boolean) => {
+    if (isCompleted || gameSubmitted) return;
+
     setIsCompleted(true);
     setIsPlaying(false);
     setCompletionTime(elapsedTime);
-    setShowCompletionModal(true);
+
+    // Submit game result to backend
+    if (playerInfo && !gameSubmitted) {
+      try {
+        const response = await fetch("/api/game-results", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            playerId: playerInfo.id,
+            timeTaken: elapsedTime,
+            wordsFound: foundWords.size,
+            totalWords: words.length,
+            completed: allWordsFound,
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to submit result");
+        }
+
+        setGameSubmitted(true);
+        setShowCompletionModal(true);
+      } catch (error) {
+        console.error("Error submitting game result:", error);
+        toast({
+          title: "Error",
+          description: "Failed to submit game result",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleTimeUp = () => {
+    if (!isCompleted) {
+      handleComplete(false);
+    }
   };
 
   const handleWordFound = (word: string) => {
     setFoundWords((prev) => new Set(Array.from(prev).concat(word)));
   };
 
-  const handleSubmitScore = (name: string) => {
-    const newEntry: LeaderboardEntry = {
-      id: Date.now().toString(),
-      name,
-      time: completionTime,
-      rank: leaderboard.length + 1,
-    };
-    const newLeaderboard = [...leaderboard, newEntry]
-      .sort((a, b) => a.time - b.time)
-      .map((entry, index) => ({ ...entry, rank: index + 1 }));
-    setLeaderboard(newLeaderboard);
-    setShowCompletionModal(false);
-  };
-
-  const handleTimeUp = () => {
-    setIsCompleted(true);
-    setIsPlaying(false);
+  const getCompletionMessage = () => {
+    if (foundWords.size === words.length) {
+      return "Congratulations! You found all the words!";
+    } else {
+      return `Time's up! You found ${foundWords.size} out of ${words.length} words.`;
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
+      <PlayerRegistrationModal
+        isOpen={showRegistrationModal}
+        onRegister={handlePlayerRegister}
+      />
+
       <header className="border-b border-border bg-card sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h1 className="text-3xl font-bold">Word Search Puzzle</h1>
+            <div>
+              <h1 className="text-3xl font-bold">Word Search Puzzle</h1>
+              {playerInfo && (
+                <p className="text-sm text-muted-foreground">
+                  Player: {playerInfo.name} ({playerInfo.employeeId})
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-4">
-              <Timer
-                duration={180}
-                isPaused={!isPlaying || isCompleted}
-                onTimeUp={handleTimeUp}
-              />
-              <Link href="/admin">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  data-testid="button-admin"
-                >
+              {isPlaying && !isCompleted && (
+                <Timer
+                  key={isPlaying ? "playing" : "stopped"}
+                  duration={180}
+                  isPaused={!isPlaying || isCompleted}
+                  onTimeUp={handleTimeUp}
+                  onTick={(remaining) => setElapsedTime(180 - remaining)}
+                />
+              )}
+              <Link href="/admin/login">
+                <Button variant="ghost" size="icon" data-testid="button-admin">
                   <Settings className="w-5 h-5" />
                 </Button>
               </Link>
@@ -120,12 +178,15 @@ export default function GamePage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8 flex-col lg:flex-row">
-          <div className="flex-1 space-y-8">
-            {!isPlaying && !isCompleted && (
+        <div className="flex justify-center">
+          <div className="max-w-4xl w-full space-y-8">
+            {!isPlaying && !isCompleted && playerInfo && (
               <div className="text-center space-y-4">
                 <p className="text-lg text-muted-foreground">
                   Find all {words.length} words hidden in the grid!
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  You have 3 minutes to complete the puzzle.
                 </p>
                 <Button
                   size="lg"
@@ -139,7 +200,7 @@ export default function GamePage() {
               </div>
             )}
 
-            {(isPlaying || isCompleted) && (
+            {isPlaying && !isCompleted && (
               <>
                 <div className="flex justify-center">
                   <WordSearchGrid
@@ -164,10 +225,51 @@ export default function GamePage() {
                 <WordList words={words} foundWords={foundWords} />
               </>
             )}
-          </div>
 
-          <div className="lg:w-80">
-            <Leaderboard entries={leaderboard} />
+            {isCompleted && (
+              <div className="text-center space-y-6">
+                <div className="bg-card border border-border rounded-lg p-8">
+                  <h2 className="text-3xl font-bold mb-4">
+                    {foundWords.size === words.length
+                      ? "🎉 Congratulations!"
+                      : "⏰ Time's Up!"}
+                  </h2>
+                  <p className="text-xl text-muted-foreground mb-6">
+                    {getCompletionMessage()}
+                  </p>
+                  <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
+                    <div className="bg-accent/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Time Taken
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {Math.floor(completionTime / 60)}:
+                        {(completionTime % 60).toString().padStart(2, "0")}
+                      </p>
+                    </div>
+                    <div className="bg-accent/50 rounded-lg p-4">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Words Found
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {foundWords.size} / {words.length}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Your result has been saved to the leaderboard.
+                  </p>
+                </div>
+
+                <Button
+                  onClick={() => setShowRegistrationModal(true)}
+                  variant="outline"
+                  data-testid="button-play-again"
+                >
+                  Play Again (New Player)
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -176,7 +278,7 @@ export default function GamePage() {
         isOpen={showCompletionModal}
         onClose={() => setShowCompletionModal(false)}
         completionTime={completionTime}
-        onSubmit={handleSubmitScore}
+        onSubmit={() => setShowCompletionModal(false)}
       />
     </div>
   );
