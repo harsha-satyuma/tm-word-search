@@ -230,17 +230,6 @@ export default function GamePage() {
                   />
                 </div>
 
-                <div className="flex justify-center gap-4">
-                  <Button
-                    onClick={handleReset}
-                    variant="outline"
-                    data-testid="button-reset"
-                  >
-                    <RotateCcw className="w-4 h-4 mr-2" />
-                    New Puzzle
-                  </Button>
-                </div>
-
                 <WordList words={words} foundWords={foundWords} />
               </>
             )}
