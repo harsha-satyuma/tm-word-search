@@ -176,6 +176,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Word routes
+  app.get("/api/words", async (req, res) => {
+    try {
+      const words = await storage.getAllWords();
+      res.json({ words });
+    } catch (error) {
+      console.error("Error fetching words:", error);
+      res.status(500).json({ error: "Failed to fetch words" });
+    }
+  });
+
+  app.post("/api/words", async (req, res) => {
+    try {
+      const { word, clue, direction } = req.body;
+
+      if (!word || !clue || !direction) {
+        return res.status(400).json({ error: "Word, clue, and direction are required" });
+      }
+
+      const newWord = await storage.createWord({ word, clue, direction });
+      res.json({ word: newWord });
+    } catch (error) {
+      console.error("Error creating word:", error);
+      res.status(500).json({ error: "Failed to create word" });
+    }
+  });
+
+  app.put("/api/words/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { word, clue, direction } = req.body;
+
+      const updatedWord = await storage.updateWord(id, { word, clue, direction });
+      res.json({ word: updatedWord });
+    } catch (error) {
+      console.error("Error updating word:", error);
+      res.status(500).json({ error: "Failed to update word" });
+    }
+  });
+
+  app.delete("/api/words/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteWord(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting word:", error);
+      res.status(500).json({ error: "Failed to delete word" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

@@ -14,8 +14,8 @@ export default function CompletionModalExample() {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         completionTime={125}
-        onSubmit={(name) => {
-          console.log('Submitted name:', name);
+        onSubmit={() => {
+          console.log('Submitted');
           setIsOpen(false);
         }}
       />

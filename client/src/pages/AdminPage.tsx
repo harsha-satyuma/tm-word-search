@@ -26,53 +26,7 @@ export default function AdminPage() {
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [words, setWords] = useState<WordData[]>([
-    {
-      id: "1",
-      word: "QUALITY",
-      clue: "Standard of excellence",
-      direction: "across",
-    },
-    {
-      id: "2",
-      word: "TEAMWORK",
-      clue: "Collaborative effort",
-      direction: "across",
-    },
-    {
-      id: "3",
-      word: "EXCELLENCE",
-      clue: "Outstanding quality",
-      direction: "across",
-    },
-    { id: "4", word: "PROCESS", clue: "Series of actions", direction: "down" },
-    {
-      id: "5",
-      word: "IMPROVEMENT",
-      clue: "Making something better",
-      direction: "down",
-    },
-    {
-      id: "6",
-      word: "SAFETY",
-      clue: "Protection from harm",
-      direction: "across",
-    },
-    { id: "7", word: "STANDARD", clue: "Established norm", direction: "down" },
-    {
-      id: "8",
-      word: "FEEDBACK",
-      clue: "Constructive response",
-      direction: "across",
-    },
-    { id: "9", word: "AUDIT", clue: "Official inspection", direction: "down" },
-    {
-      id: "10",
-      word: "CUSTOMER",
-      clue: "Person who buys",
-      direction: "across",
-    },
-  ]);
+  const [words, setWords] = useState<WordData[]>([]);
   const [editingWord, setEditingWord] = useState<WordData | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [timerDuration, setTimerDuration] = useState("10");
@@ -95,6 +49,7 @@ export default function AdminPage() {
     setIsLoading(false);
     fetchLeaderboard();
     fetchSettings();
+    fetchWords();
   }, []);
 
   const fetchLeaderboard = async () => {
@@ -123,6 +78,28 @@ export default function AdminPage() {
       }
     } catch (error) {
       console.error("Error fetching settings:", error);
+    }
+  };
+
+  const fetchWords = async () => {
+    try {
+      const response = await fetch("/api/words");
+      const data = await response.json();
+      if (response.ok) {
+        setWords(data.words.map((w: any) => ({
+          id: w.id.toString(),
+          word: w.word,
+          clue: w.clue,
+          direction: w.direction,
+        })));
+      }
+    } catch (error) {
+      console.error("Error fetching words:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch words",
+        variant: "destructive",
+      });
     }
   };
 
@@ -179,27 +156,93 @@ export default function AdminPage() {
     setLocation("/");
   };
 
-  const handleAddWord = (data: WordFormData) => {
-    const newWord: WordData = {
-      id: Date.now().toString(),
-      ...data,
-    };
-    setWords([...words, newWord]);
-    console.log("Word added:", newWord);
+  const handleAddWord = async (data: WordFormData) => {
+    try {
+      const response = await fetch("/api/words", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add word");
+      }
+
+      toast({
+        title: "Success",
+        description: "Word added successfully",
+      });
+      
+      fetchWords();
+    } catch (error) {
+      console.error("Error adding word:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add word",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleEditWord = (data: WordFormData) => {
+  const handleEditWord = async (data: WordFormData) => {
     if (!editingWord) return;
-    setWords(
-      words.map((w) => (w.id === editingWord.id ? { ...w, ...data } : w)),
-    );
-    setEditingWord(null);
-    console.log("Word updated:", data);
+    
+    try {
+      const response = await fetch(`/api/words/${editingWord.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update word");
+      }
+
+      toast({
+        title: "Success",
+        description: "Word updated successfully",
+      });
+      
+      setEditingWord(null);
+      fetchWords();
+    } catch (error) {
+      console.error("Error updating word:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update word",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeleteWord = (id: string) => {
-    setWords(words.filter((w) => w.id !== id));
-    console.log("Word deleted:", id);
+  const handleDeleteWord = async (id: string) => {
+    try {
+      const response = await fetch(`/api/words/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete word");
+      }
+
+      toast({
+        title: "Success",
+        description: "Word deleted successfully",
+      });
+      
+      fetchWords();
+    } catch (error) {
+      console.error("Error deleting word:", error);
+      toast({
+        title: "Error",
+        description: "Failed to delete word",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatTime = (seconds: number) => {

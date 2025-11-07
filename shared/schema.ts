@@ -107,3 +107,36 @@ export const insertGameSettingSchema = createInsertSchema(gameSettings, {
 
 export type InsertGameSetting = z.infer<typeof insertGameSettingSchema>;
 export type GameSetting = typeof gameSettings.$inferSelect;
+
+// Words table
+export const words = sqliteTable("words", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  word: text("word").notNull(),
+  clue: text("clue").notNull(),
+  direction: text("direction").notNull(), // 'left-right', 'right-left', etc.
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+});
+
+export const insertWordSchema = createInsertSchema(words, {
+  word: z.string().min(1, "Word is required"),
+  clue: z.string().min(1, "Clue is required"),
+  direction: z.enum([
+    'left-right',
+    'right-left',
+    'top-bottom',
+    'bottom-top',
+    'diagonal-down-right',
+    'diagonal-down-left',
+    'diagonal-up-right',
+    'diagonal-up-left',
+  ]),
+}).pick({
+  word: true,
+  clue: true,
+  direction: true,
+});
+
+export type InsertWord = z.infer<typeof insertWordSchema>;
+export type Word = typeof words.$inferSelect;

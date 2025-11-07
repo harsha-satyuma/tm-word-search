@@ -2,12 +2,13 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import type { Direction } from './AdminWordForm';
 
 export interface WordData {
   id: string;
   word: string;
   clue: string;
-  direction: 'across' | 'down';
+  direction: Direction;
 }
 
 export interface WordListCardProps {
@@ -15,6 +16,17 @@ export interface WordListCardProps {
   onEdit: (word: WordData) => void;
   onDelete: (id: string) => void;
 }
+
+const directionLabels: Record<Direction, string> = {
+  'left-right': 'Left to Right →',
+  'right-left': 'Right to Left ←',
+  'top-bottom': 'Top to Bottom ↓',
+  'bottom-top': 'Bottom to Top ↑',
+  'diagonal-down-right': 'Diagonal ↘',
+  'diagonal-down-left': 'Diagonal ↙',
+  'diagonal-up-right': 'Diagonal ↗',
+  'diagonal-up-left': 'Diagonal ↖',
+};
 
 export default function WordListCard({ word, onEdit, onDelete }: WordListCardProps) {
   return (
@@ -26,7 +38,7 @@ export default function WordListCard({ word, onEdit, onDelete }: WordListCardPro
               {word.word}
             </h3>
             <Badge variant="secondary" data-testid={`badge-direction-${word.id}`}>
-              {word.direction}
+              {directionLabels[word.direction]}
             </Badge>
           </div>
           <p className="text-sm text-muted-foreground" data-testid={`text-clue-${word.id}`}>

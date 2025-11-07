@@ -6,6 +6,7 @@ import {
   players,
   gameResults,
   gameSettings,
+  words,
   type Admin,
   type Player,
   type GameResult,
@@ -15,6 +16,8 @@ import {
   type LeaderboardEntry,
   type GameSetting,
   type InsertGameSetting,
+  type Word,
+  type InsertWord,
 } from "@shared/schema";
 import * as crypto from "crypto";
 
@@ -41,6 +44,13 @@ export interface IStorage {
   getGameSetting(key: string): Promise<GameSetting | undefined>;
   upsertGameSetting(key: string, value: string): Promise<GameSetting>;
   getAllGameSettings(): Promise<GameSetting[]>;
+
+  // Word methods
+  getAllWords(): Promise<Word[]>;
+  getWordById(id: number): Promise<Word | undefined>;
+  createWord(word: InsertWord): Promise<Word>;
+  updateWord(id: number, word: Partial<InsertWord>): Promise<Word>;
+  deleteWord(id: number): Promise<void>;
 }
 
 export class SqliteStorage implements IStorage {
@@ -210,6 +220,50 @@ export class SqliteStorage implements IStorage {
 
   async getAllGameSettings(): Promise<GameSetting[]> {
     return await db.select().from(gameSettings).all();
+  }
+
+  // Word methods
+  async getAllWords(): Promise<Word[]> {
+    return await db.select().from(words).all();
+  }
+
+  async getWordById(id: number): Promise<Word | undefined> {
+    const result = await db
+      .select()
+      .from(words)
+      .where(eq(words.id, id))
+      .limit(1);
+    return result[0];
+  }
+
+  async createWord(word: InsertWord): Promise<Word> {
+    const result = await db
+      .insert(words)
+      .values({
+        word: word.word.toUpperCase(),
+        clue: word.clue,
+        direction: word.direction,
+      })
+      .returning();
+    return result[0];
+  }
+
+  async updateWord(id: number, word: Partial<InsertWord>): Promise<Word> {
+    const updates: any = {};
+    if (word.word !== undefined) updates.word = word.word.toUpperCase();
+    if (word.clue !== undefined) updates.clue = word.clue;
+    if (word.direction !== undefined) updates.direction = word.direction;
+
+    const result = await db
+      .update(words)
+      .set(updates)
+      .where(eq(words.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteWord(id: number): Promise<void> {
+    await db.delete(words).where(eq(words.id, id));
   }
 
   // Utility method for password hashing

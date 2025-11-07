@@ -3,18 +3,41 @@ export interface PlacedWord {
   positions: { row: number; col: number }[];
 }
 
+export type WordDirection = 
+  | 'left-right'
+  | 'right-left'
+  | 'top-bottom'
+  | 'bottom-top'
+  | 'diagonal-down-right'
+  | 'diagonal-down-left'
+  | 'diagonal-up-right'
+  | 'diagonal-up-left';
+
+export interface WordWithDirection {
+  word: string;
+  direction?: WordDirection;
+}
+
 interface Direction {
   row: number;
   col: number;
 }
 
-const DIRECTIONS: Direction[] = [
-  { row: 0, col: 1 },
-  { row: 1, col: 0 },
-];
+const DIRECTION_MAP: Record<WordDirection, Direction> = {
+  'left-right': { row: 0, col: 1 },
+  'right-left': { row: 0, col: -1 },
+  'top-bottom': { row: 1, col: 0 },
+  'bottom-top': { row: -1, col: 0 },
+  'diagonal-down-right': { row: 1, col: 1 },
+  'diagonal-down-left': { row: 1, col: -1 },
+  'diagonal-up-right': { row: -1, col: 1 },
+  'diagonal-up-left': { row: -1, col: -1 },
+};
+
+const ALL_DIRECTIONS: Direction[] = Object.values(DIRECTION_MAP);
 
 export function generateWordSearchGrid(
-  words: string[],
+  words: string[] | WordWithDirection[],
   gridSize: number = 14
 ): { grid: string[][]; placedWords: PlacedWord[] } {
   const grid: string[][] = Array.from({ length: gridSize }, () =>
@@ -38,26 +61,29 @@ export function generateWordSearchGrid(
     return true;
   };
 
-  const placeWord = (word: string): boolean => {
+  const placeWord = (wordStr: string, specifiedDirection?: WordDirection): boolean => {
     let attempts = 0;
     const maxAttempts = 500;
 
     while (attempts < maxAttempts) {
       const row = Math.floor(Math.random() * gridSize);
       const col = Math.floor(Math.random() * gridSize);
-      const direction = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
+      
+      const direction = specifiedDirection 
+        ? DIRECTION_MAP[specifiedDirection]
+        : ALL_DIRECTIONS[Math.floor(Math.random() * ALL_DIRECTIONS.length)];
 
-      if (canPlaceWord(word, row, col, direction)) {
+      if (canPlaceWord(wordStr, row, col, direction)) {
         const positions: { row: number; col: number }[] = [];
         
-        for (let i = 0; i < word.length; i++) {
+        for (let i = 0; i < wordStr.length; i++) {
           const r = row + direction.row * i;
           const c = col + direction.col * i;
-          grid[r][c] = word[i];
+          grid[r][c] = wordStr[i];
           positions.push({ row: r, col: c });
         }
 
-        placedWords.push({ word, positions });
+        placedWords.push({ word: wordStr, positions });
         return true;
       }
 
@@ -67,8 +93,12 @@ export function generateWordSearchGrid(
     return false;
   };
 
-  for (const word of words) {
-    placeWord(word.toUpperCase());
+  for (const wordItem of words) {
+    if (typeof wordItem === 'string') {
+      placeWord(wordItem.toUpperCase());
+    } else {
+      placeWord(wordItem.word.toUpperCase(), wordItem.direction);
+    }
   }
 
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';

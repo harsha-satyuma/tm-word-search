@@ -1,16 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
+
+export type Direction = 
+  | 'left-right'
+  | 'right-left'
+  | 'top-bottom'
+  | 'bottom-top'
+  | 'diagonal-down-right'
+  | 'diagonal-down-left'
+  | 'diagonal-up-right'
+  | 'diagonal-up-left';
 
 export interface WordFormData {
   word: string;
   clue: string;
-  direction: 'across' | 'down';
+  direction: Direction;
 }
 
 export interface AdminWordFormProps {
@@ -22,7 +32,15 @@ export interface AdminWordFormProps {
 export default function AdminWordForm({ onSubmit, initialData, isEditing = false }: AdminWordFormProps) {
   const [word, setWord] = useState(initialData?.word || '');
   const [clue, setClue] = useState(initialData?.clue || '');
-  const [direction, setDirection] = useState<'across' | 'down'>(initialData?.direction || 'across');
+  const [direction, setDirection] = useState<Direction>(initialData?.direction || 'left-right');
+
+  useEffect(() => {
+    if (initialData) {
+      setWord(initialData.word);
+      setClue(initialData.clue);
+      setDirection(initialData.direction);
+    }
+  }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,7 +49,7 @@ export default function AdminWordForm({ onSubmit, initialData, isEditing = false
       if (!isEditing) {
         setWord('');
         setClue('');
-        setDirection('across');
+        setDirection('left-right');
       }
     }
   };
@@ -70,17 +88,22 @@ export default function AdminWordForm({ onSubmit, initialData, isEditing = false
         </div>
 
         <div className="space-y-2">
-          <Label>Direction</Label>
-          <RadioGroup value={direction} onValueChange={(v) => setDirection(v as 'across' | 'down')}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="across" id="across" data-testid="radio-across" />
-              <Label htmlFor="across" className="font-normal cursor-pointer">Across</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="down" id="down" data-testid="radio-down" />
-              <Label htmlFor="down" className="font-normal cursor-pointer">Down</Label>
-            </div>
-          </RadioGroup>
+          <Label htmlFor="direction">Direction</Label>
+          <Select value={direction} onValueChange={(v) => setDirection(v as Direction)}>
+            <SelectTrigger id="direction" data-testid="select-direction">
+              <SelectValue placeholder="Select direction" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="left-right">Left to Right →</SelectItem>
+              <SelectItem value="right-left">Right to Left ←</SelectItem>
+              <SelectItem value="top-bottom">Top to Bottom ↓</SelectItem>
+              <SelectItem value="bottom-top">Bottom to Top ↑</SelectItem>
+              <SelectItem value="diagonal-down-right">Diagonal Down-Right ↘</SelectItem>
+              <SelectItem value="diagonal-down-left">Diagonal Down-Left ↙</SelectItem>
+              <SelectItem value="diagonal-up-right">Diagonal Up-Right ↗</SelectItem>
+              <SelectItem value="diagonal-up-left">Diagonal Up-Left ↖</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <Button type="submit" className="w-full" data-testid="button-submit-word">

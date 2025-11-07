@@ -7,7 +7,7 @@ import WordList from "@/components/WordList";
 import PlayerRegistrationModal, {
   PlayerInfo,
 } from "@/components/PlayerRegistrationModal";
-import { generateWordSearchGrid } from "@/utils/wordSearchGenerator";
+import { generateWordSearchGrid, type WordWithDirection } from "@/utils/wordSearchGenerator";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 
@@ -23,25 +23,15 @@ export default function GamePage() {
   const [timerDuration, setTimerDuration] = useState(10); // Default 10 seconds for testing
   const { toast } = useToast();
 
-  const words = [
-    "QUALITY",
-    "TEAMWORK",
-    "EXCELLENCE",
-    "PROCESS",
-    "IMPROVEMENT",
-    "SAFETY",
-    "STANDARD",
-    "FEEDBACK",
-    "AUDIT",
-    "CUSTOMER",
-  ];
+  const [wordsWithDirections, setWordsWithDirections] = useState<WordWithDirection[]>([]);
+  const words = wordsWithDirections.map(w => w.word);
 
   const [gridData, setGridData] = useState<{
     grid: string[][];
     placedWords: PlacedWord[];
-  }>(() => generateWordSearchGrid(words, 14));
+  }>(() => generateWordSearchGrid(wordsWithDirections, 14));
 
-  // Fetch timer duration from settings
+  // Fetch timer duration from settings and words
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -55,7 +45,31 @@ export default function GamePage() {
         // Keep default of 10 seconds
       }
     };
+
+    const fetchWords = async () => {
+      try {
+        const response = await fetch("/api/words");
+        const data = await response.json();
+        if (response.ok) {
+          const fetchedWords: WordWithDirection[] = data.words.map((w: any) => ({
+            word: w.word,
+            direction: w.direction,
+          }));
+          setWordsWithDirections(fetchedWords);
+          setGridData(generateWordSearchGrid(fetchedWords, 14));
+        }
+      } catch (error) {
+        console.error("Error fetching words:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch words",
+          variant: "destructive",
+        });
+      }
+    };
+
     fetchSettings();
+    fetchWords();
   }, []);
 
   useEffect(() => {
@@ -82,7 +96,7 @@ export default function GamePage() {
     setIsCompleted(false);
     setElapsedTime(0);
     setFoundWords(new Set());
-    setGridData(generateWordSearchGrid(words, 14));
+    setGridData(generateWordSearchGrid(wordsWithDirections, 14));
     setGameSubmitted(false);
   };
 
@@ -91,7 +105,7 @@ export default function GamePage() {
     setIsCompleted(false);
     setElapsedTime(0);
     setFoundWords(new Set());
-    setGridData(generateWordSearchGrid(words, 14));
+    setGridData(generateWordSearchGrid(wordsWithDirections, 14));
     setGameSubmitted(false);
   };
 

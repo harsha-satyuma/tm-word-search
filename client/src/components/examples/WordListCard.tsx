@@ -5,7 +5,7 @@ export default function WordListCardExample() {
     id: '1',
     word: 'EXAMPLE',
     clue: 'A sample or illustration of something',
-    direction: 'across',
+    direction: 'left-right',
   };
 
   return (
