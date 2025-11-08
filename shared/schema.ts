@@ -26,6 +26,7 @@ export const players = sqliteTable("players", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   employeeId: text("employee_id").notNull().unique(),
   name: text("name").notNull(),
+  department: text("department").notNull().default("Others"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .default(sql`(unixepoch())`),
@@ -34,9 +35,11 @@ export const players = sqliteTable("players", {
 export const insertPlayerSchema = createInsertSchema(players, {
   employeeId: z.string().min(1, "Employee ID is required"),
   name: z.string().min(1, "Name is required"),
+  department: z.string().min(1, "Department is required"),
 }).pick({
   employeeId: true,
   name: true,
+  department: true,
 });
 
 export type InsertPlayer = z.infer<typeof insertPlayerSchema>;
@@ -79,6 +82,7 @@ export type LeaderboardEntry = {
   id: number;
   employeeId: string;
   name: string;
+  department: string;
   timeTaken: number;
   wordsFound: number;
   totalWords: number;

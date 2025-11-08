@@ -10,12 +10,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 
 export interface PlayerInfo {
   id: number;
   employeeId: string;
   name: string;
+  department: string;
 }
 
 interface PlayerRegistrationModalProps {
@@ -23,22 +25,47 @@ interface PlayerRegistrationModalProps {
   onRegister: (playerInfo: PlayerInfo) => void;
 }
 
+const DEPARTMENTS = [
+  "Quality Drives",
+  "Quality UPCS",
+  "Quality UPS",
+  "Testing Drives",
+  "Testing UPCS",
+  "Testing UPS",
+  "IGI",
+  "Methods",
+  "Design",
+  "Production Drives",
+  "Production UPCS",
+  "Production UPS",
+  "PPC",
+  "Stores",
+  "PMD",
+  "HR & ADMIN",
+  "Finance",
+  "IT",
+  "SCM",
+  "Logistics",
+  "Others",
+];
+
 export default function PlayerRegistrationModal({
   isOpen,
   onRegister,
 }: PlayerRegistrationModalProps) {
   const [name, setName] = useState("");
   const [employeeId, setEmployeeId] = useState("");
+  const [department, setDepartment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!name.trim() || !employeeId.trim()) {
+    if (!name.trim() || !employeeId.trim() || !department) {
       toast({
         title: "Validation Error",
-        description: "Please fill in both name and employee ID",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
@@ -55,6 +82,7 @@ export default function PlayerRegistrationModal({
         body: JSON.stringify({
           name: name.trim(),
           employeeId: employeeId.trim(),
+          department: department,
         }),
       });
 
@@ -126,6 +154,21 @@ export default function PlayerRegistrationModal({
                 disabled={isSubmitting}
                 data-testid="input-employee-id"
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="department">Department</Label>
+              <Select value={department} onValueChange={setDepartment} disabled={isSubmitting}>
+                <SelectTrigger id="department" data-testid="select-department">
+                  <SelectValue placeholder="Select your department" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept} value={dept}>
+                      {dept}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

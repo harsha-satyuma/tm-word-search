@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, Play, Settings } from "lucide-react";
+import { Play, Settings } from "lucide-react";
 import WordSearchGrid, { PlacedWord } from "@/components/WordSearchGrid";
 import Timer from "@/components/Timer";
-import WordList from "@/components/WordList";
 import PlayerRegistrationModal, {
   PlayerInfo,
 } from "@/components/PlayerRegistrationModal";
@@ -179,7 +178,7 @@ export default function GamePage() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <h1 className="text-3xl font-bold">Word Search Puzzle</h1>
+              <h1 className="text-3xl font-bold">Quality - Word Search</h1>
               {playerInfo && (
                 <p className="text-sm text-muted-foreground">
                   Player: {playerInfo.name} ({playerInfo.employeeId})
@@ -214,7 +213,7 @@ export default function GamePage() {
             {!isPlaying && !isCompleted && playerInfo && (
               <div className="text-center space-y-4">
                 <p className="text-lg text-muted-foreground">
-                  Find all {words.length} words hidden in the grid!
+                  Find all words hidden in the grid!
                 </p>
                 <p className="text-sm text-muted-foreground">
                   You have {Math.floor(timerDuration / 60)}:
@@ -234,18 +233,14 @@ export default function GamePage() {
             )}
 
             {isPlaying && !isCompleted && (
-              <>
-                <div className="flex justify-center">
-                  <WordSearchGrid
-                    grid={gridData.grid}
-                    placedWords={gridData.placedWords}
-                    onWordFound={handleWordFound}
-                    disabled={isCompleted}
-                  />
-                </div>
-
-                <WordList words={words} foundWords={foundWords} />
-              </>
+              <div className="flex justify-center">
+                <WordSearchGrid
+                  grid={gridData.grid}
+                  placedWords={gridData.placedWords}
+                  onWordFound={handleWordFound}
+                  disabled={isCompleted}
+                />
+              </div>
             )}
 
             {isCompleted && (

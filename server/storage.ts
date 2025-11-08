@@ -104,6 +104,7 @@ export class SqliteStorage implements IStorage {
       .values({
         employeeId: player.employeeId,
         name: player.name,
+        department: player.department,
       })
       .returning();
     return result[0];
@@ -149,6 +150,7 @@ export class SqliteStorage implements IStorage {
         completedAt: gameResults.completedAt,
         employeeId: players.employeeId,
         name: players.name,
+        department: players.department,
       })
       .from(gameResults)
       .innerJoin(players, eq(gameResults.playerId, players.id))
@@ -163,6 +165,7 @@ export class SqliteStorage implements IStorage {
       id: result.id,
       employeeId: result.employeeId,
       name: result.name,
+      department: result.department,
       timeTaken: result.timeTaken,
       wordsFound: result.wordsFound,
       totalWords: result.totalWords,

@@ -13,6 +13,7 @@ interface LeaderboardEntry {
   id: number;
   employeeId: string;
   name: string;
+  department: string;
   timeTaken: number;
   wordsFound: number;
   totalWords: number;
@@ -414,6 +415,9 @@ export default function AdminPage() {
                             <p className="font-medium truncate">{entry.name}</p>
                             <p className="text-sm text-muted-foreground">
                               ID: {entry.employeeId}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              {entry.department}
                             </p>
                           </div>
                           <div className="flex-shrink-0 text-right">

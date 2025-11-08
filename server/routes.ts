@@ -50,12 +50,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Player routes
   app.post("/api/players/register", async (req, res) => {
     try {
-      const { employeeId, name } = req.body;
+      const { employeeId, name, department } = req.body;
 
-      if (!employeeId || !name) {
+      if (!employeeId || !name || !department) {
         return res
           .status(400)
-          .json({ error: "Employee ID and name are required" });
+          .json({ error: "Employee ID, name, and department are required" });
       }
 
       // Check if player already completed the game
@@ -73,7 +73,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!player) {
         // Create new player
-        player = await storage.createPlayer({ employeeId, name });
+        player = await storage.createPlayer({ employeeId, name, department });
       }
 
       res.json({ player });
