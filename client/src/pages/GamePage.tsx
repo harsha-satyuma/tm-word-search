@@ -277,14 +277,6 @@ export default function GamePage() {
                     Your result has been saved to the leaderboard.
                   </p>
                 </div>
-
-                <Button
-                  onClick={() => setShowRegistrationModal(true)}
-                  variant="outline"
-                  data-testid="button-play-again"
-                >
-                  Play Again (New Player)
-                </Button>
               </div>
             )}
           </div>
