@@ -125,10 +125,9 @@ export default function PlayerRegistrationModal({
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Welcome to Word Search Puzzle</DialogTitle>
+            <DialogTitle>Welcome to Quality - Word Search</DialogTitle>
             <DialogDescription>
-              Please enter your details to start the game. You can only play
-              once per employee ID.
+              Please enter your details to start the game.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
