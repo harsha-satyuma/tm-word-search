@@ -5,6 +5,8 @@ export interface WordSearchGridProps {
   placedWords: PlacedWord[];
   onWordFound?: (word: string) => void;
   disabled?: boolean;
+  unfoundWords?: PlacedWord[];
+  foundWords?: Set<string>;
 }
 
 export interface PlacedWord {
@@ -12,12 +14,37 @@ export interface PlacedWord {
   positions: { row: number; col: number }[];
 }
 
-export default function WordSearchGrid({ grid, placedWords, onWordFound, disabled = false }: WordSearchGridProps) {
+export default function WordSearchGrid({ grid, placedWords, onWordFound, disabled = false, unfoundWords = [], foundWords }: WordSearchGridProps) {
   const [selectedCells, setSelectedCells] = useState<{ row: number; col: number }[]>([]);
   const [foundPositions, setFoundPositions] = useState<Set<string>>(new Set());
+  const [unfoundPositions, setUnfoundPositions] = useState<Set<string>>(new Set());
   const [isSelecting, setIsSelecting] = useState(false);
 
   const posKey = (row: number, col: number) => `${row}-${col}`;
+
+  useEffect(() => {
+    const newUnfoundPositions = new Set<string>();
+    unfoundWords.forEach((word) => {
+      word.positions.forEach(({ row, col }) => {
+        newUnfoundPositions.add(posKey(row, col));
+      });
+    });
+    setUnfoundPositions(newUnfoundPositions);
+  }, [unfoundWords]);
+
+  useEffect(() => {
+    if (foundWords) {
+      const newFoundPositions = new Set<string>();
+      placedWords.forEach((word) => {
+        if (foundWords.has(word.word)) {
+          word.positions.forEach(({ row, col }) => {
+            newFoundPositions.add(posKey(row, col));
+          });
+        }
+      });
+      setFoundPositions(newFoundPositions);
+    }
+  }, [foundWords, placedWords]);
 
   const handleMouseDown = (row: number, col: number) => {
     if (disabled) return;
@@ -144,6 +171,8 @@ export default function WordSearchGrid({ grid, placedWords, onWordFound, disable
 
   const isFound = (row: number, col: number) => foundPositions.has(posKey(row, col));
 
+  const isUnfound = (row: number, col: number) => unfoundPositions.has(posKey(row, col));
+
   return (
     <div className="w-full flex justify-center px-4 md:px-0">
       <div 
@@ -166,10 +195,12 @@ export default function WordSearchGrid({ grid, placedWords, onWordFound, disable
                   className={`
                     w-6 h-6 sm:w-7 sm:h-7 md:w-9 md:h-9 flex items-center justify-center
                     font-semibold text-xs sm:text-sm md:text-base font-mono
-                    border border-border rounded cursor-pointer
+                    border border-border rounded ${disabled ? '' : 'cursor-pointer'}
                     transition-all duration-200
-                    ${isFound(rowIdx, colIdx) 
-                      ? 'bg-primary text-primary-foreground' 
+                    ${isFound(rowIdx, colIdx)
+                      ? 'bg-primary text-primary-foreground'
+                      : isUnfound(rowIdx, colIdx)
+                      ? 'bg-destructive text-destructive-foreground'
                       : isSelected(rowIdx, colIdx)
                       ? 'bg-accent text-accent-foreground scale-110'
                       : 'bg-background hover-elevate'

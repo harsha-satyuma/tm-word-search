@@ -160,12 +160,14 @@ export default function GamePage() {
   };
 
   const getCompletionMessage = () => {
-    if (foundWords.size === words.length) {
-      return "You found all the words!";
-    } else {
-      return `You found ${foundWords.size} out of ${words.length} words.`;
-    }
+  if (foundWords.size === words.length) {
+  return "You found all the words!";
+  } else {
+  return `You found ${foundWords.size} out of ${words.length} words.`;
+  }
   };
+
+  const unfoundWords = gridData.placedWords.filter(pw => !foundWords.has(pw.word));
 
   return (
     <div className="min-h-screen bg-background">
@@ -272,6 +274,15 @@ export default function GamePage() {
                         {foundWords.size} / {words.length}
                       </p>
                     </div>
+                  </div>
+                  <div className="mb-6">
+                    <WordSearchGrid
+                      grid={gridData.grid}
+                      placedWords={gridData.placedWords}
+                      disabled={true}
+                      unfoundWords={unfoundWords}
+                    foundWords={foundWords}
+                  />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Your result has been saved to the leaderboard.
